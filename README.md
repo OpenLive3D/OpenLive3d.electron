@@ -2,6 +2,8 @@
 
 Electron Implementation of OpenLive3D
 
+Join our Discord Server: [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/pGPY5Jfhvz)
+
 
 ## Abstract
 
