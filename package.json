@@ -4,9 +4,7 @@
   "description": "The Official Electron App for OpenLive3D",
   "main": "main.js",
   "scripts": {
-    "postinstall": "install-app-deps",
-    "start": "npm install && electron ./app",
-    "pack": "electron-builder --dir",
+    "start": "electron .",
     "dist": "electron-builder"
   },
   "repository": "https://github.com/OpenLive3D/OpenLive3D.github.io.git",
@@ -17,7 +15,7 @@
     "electron-builder": "^23.6.0"
   },
   "build": {
-    "appId": "yourappid",
+    "appId": "OpenLive3D.electron",
     "mac": {
       "icon": "build/icon.icns"
     },
@@ -25,7 +23,8 @@
       "target": [
         "AppImage",
         "deb"
-      ]
+      ],
+      "icon": "build/icons"
     },
     "win": {
       "target": "squirrel",
