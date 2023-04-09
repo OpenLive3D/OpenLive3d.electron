@@ -1,0 +1,35 @@
+{
+  "name": "OpenLive3D",
+  "version": "1.0.0",
+  "description": "The Official Electron App for OpenLive3D",
+  "main": "main.js",
+  "scripts": {
+    "postinstall": "install-app-deps",
+    "start": "npm install && electron ./app",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "repository": "https://github.com/OpenLive3D/OpenLive3D.github.io.git",
+  "author": "Wei-1",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "electron": "^24.0.0",
+    "electron-builder": "^23.6.0"
+  },
+  "build": {
+    "appId": "yourappid",
+    "mac": {
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "win": {
+      "target": "squirrel",
+      "icon": "build/icon.ico"
+    }
+  }
+}

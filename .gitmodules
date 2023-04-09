@@ -1,0 +1,3 @@
+[submodule "OpenLive3D.github.io"]
+	path = OpenLive3D.github.io
+	url = https://github.com/OpenLive3D/OpenLive3D.github.io.git
