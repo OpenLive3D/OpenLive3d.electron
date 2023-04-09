@@ -1,11 +1,11 @@
 {
   "name": "OpenLive3D",
-  "version": "1.0.0",
+  "version": "1.2.14",
   "description": "The Official Electron App for OpenLive3D",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder -mwl"
   },
   "repository": "https://github.com/OpenLive3D/OpenLive3D.github.io.git",
   "author": "Wei-1",
@@ -20,14 +20,9 @@
       "icon": "build/icon.icns"
     },
     "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
       "icon": "build/icons"
     },
     "win": {
-      "target": "squirrel",
       "icon": "build/icon.ico"
     }
   }
