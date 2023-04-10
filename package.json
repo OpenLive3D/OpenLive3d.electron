@@ -1,6 +1,6 @@
 {
   "name": "OpenLive3D",
-  "version": "1.2.14",
+  "version": "v1.3.1",
   "description": "The Official Electron App for OpenLive3D",
   "main": "main.js",
   "scripts": {
