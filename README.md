@@ -10,9 +10,9 @@ Join our Discord Server: [![Discord](https://badgen.net/badge/icon/discord?icon=
 This repository includes the files that we used to turn the website into an Electron App.
 
 In `Release`, we included the executable files for:
- - [x] Mac `.dmg`
- - [x] Windows  `.exe`
- - [x] Linux `.AppImage`
+ - [x] Mac `.zip`
+ - [ ] Windows  `.exe`
+ - [ ] Linux `.AppImage`
 
 https://github.com/OpenLive3D/OpenLive3d.electron/releases
 
@@ -20,8 +20,9 @@ https://github.com/OpenLive3D/OpenLive3d.electron/releases
 ## Local Building Process
 
  - Install: `npm install`
- - Build Executables: `npm run dist`
- - Executables will be created in the `dist` folder
+ - Start Local Electron App: `npm run start`
+ - Build Executables: `npm run make`
+ - Executables will be created in the `out` folder
 
 
 ## Appendix
