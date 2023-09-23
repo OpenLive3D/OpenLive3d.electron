@@ -60,7 +60,7 @@ function createWindow() {
             backgroundThrottling: false,
         },
     });
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
 
     // and load the index.html of the app.
     win.loadURL(url.format({
