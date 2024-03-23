@@ -24,3 +24,7 @@ function setLogAPI(saveString){
         console.log("API Call Error");
     }
 }
+
+function onKeyUpHook(f){
+    document.addEventListener("keyup", f);
+}
