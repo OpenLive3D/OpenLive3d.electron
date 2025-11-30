@@ -7,10 +7,10 @@ module.exports = {
         }
       }
     },
-    // osxNotarize: {
-    //   tool: 'notarytool',
-    //   keychainProfile: 'OpenLive3D',
-    // },
+    osxNotarize: {
+      tool: 'notarytool',
+      keychainProfile: 'OpenLive3D',
+    },
     icon: './build/icon'
   },
   rebuildConfig: {},
