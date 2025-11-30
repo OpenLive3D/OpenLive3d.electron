@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <link rel="apple-touch-icon" sizes="180x180" href="asset/favicon/apple-touch-icon.png">
@@ -10,6 +11,7 @@
     <link rel="stylesheet" href="ol3dc/css/openlive3d.css">
     <link rel="stylesheet" href="ol3dc/css/ghostkwebb.css" id="theme-ghostkwebb" disabled>
 </head>
+
 <body>
     <!-- layout -->
     <div class="vrm" id="divvrm">
@@ -20,10 +22,12 @@
     <div class="bgimg" id="bgimg"></div>
     <div class="w3-sidebar w3-animate-left" style="width:340px;background-color:#0006;display:none" id="thesidebar">
         <div class="w3-bar-item" style="height:60px;color:#0000"> . </div>
-        <br/>
-        <button onclick="hideObj('vrmbox')" id="vrmboxbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <br />
+        <button onclick="hideObj('vrmbox')" id="vrmboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="vrmbox"></div>
-        <button onclick="hideObj('dbgbox')" id="videoctlbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <button onclick="hideObj('dbgbox')" id="videoctlbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" style="background-color:#000a" id="dbgbox">
             <select id="videoselect"></select>
             <div class="w3-margin-left">
@@ -33,38 +37,59 @@
                 <input type="checkbox" id="dbglmcheck">
                 <label id="dbglmlabel" style="color:#fff"></label>
             </div>
+            <div class="w3-margin-left w3-margin-top">
+                <input type="checkbox" id="useifacialmocap" onclick="toggleIFacialMocap(this.checked)">
+                <label for="useifacialmocap" style="color:#fff">Use iFacialMocap</label>
+                <div id="ifacialmocap-settings" style="display:none; margin-top: 5px;">
+                    <label style="color:#fff; font-size: 12px;">iPhone IP:</label>
+                    <input type="text" id="ifacialmocap-ip" class="w3-input w3-border w3-round w3-small"
+                        style="width: 150px; display: inline-block; padding: 4px;" placeholder="192.168.1.x">
+                    <button onclick="connectIFacialMocap()" class="w3-button w3-tiny w3-blue w3-round">Connect</button>
+                    <button onclick="document.getElementById('ifacialmocap-guide').style.display='flex'"
+                        class="w3-button w3-tiny w3-grey w3-round" style="margin-left:5px">?</button>
+                </div>
+            </div>
             <canvas id="dbg"></canvas>
         </div>
-        <button onclick="hideObj('effectbox')" id="effectboxbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+
+
+
+        <button onclick="hideObj('effectbox')" id="effectboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="effectbox"></div>
-        <button onclick="hideObj('confbox')" id="confboxbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <button onclick="hideObj('confbox')" id="confboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="confbox"></div>
         <!--music box-->
-        <button onclick="hideObj('musicbox')" id="musicboxbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <button onclick="hideObj('musicbox')" id="musicboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="musicbox"></div>
         <!---->
-        <button onclick="hideObj('logbox')" id="logboxbutton" class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <button onclick="hideObj('logbox')" id="logboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="logbox"></div>
         <div class="w3-bar-item w3-margin" id="about"></div>
     </div>
 
     <div class="w3-sidebar w3-animate-left" style="width:52px;background-color:#00000008;display:block" id="themoodbar">
     </div>
-    <div class="w3-sidebar w3-animate-right" style="width:52px;background-color:#00000008;right:0;display:block" id="theposebar">
+    <div class="w3-sidebar w3-animate-right" style="width:52px;background-color:#00000008;right:0;display:block"
+        id="theposebar">
     </div>
     <div class="systembox" id="systembox">
-        <img id="systemimg" src="asset/logo-dark.png" style="height:50px;cursor:pointer"/>
+        <img id="systemimg" src="asset/logo-dark.png" style="height:50px;cursor:pointer" />
         <text class="systemtext" id="systemtext"> OpenLive3D </text>
     </div>
     <div class="alertbox" id="alertbox">
-        <img id="alertimg" onclick="displayObj('alerttext')" src="asset/alert/alert.png" style="width:30px;cursor:pointer"/>
+        <img id="alertimg" onclick="displayObj('alerttext')" src="asset/alert/alert.png"
+            style="width:30px;cursor:pointer" />
         <text class="alerttext" style="display:none" id="alerttext"></text>
     </div>
     <div class="loadbox" id="loadbox">
         <div class="w3-display-middle" style="width:280px">
-            <img id="loadimg" src="asset/logo.png" style="height:50px"/>
+            <img id="loadimg" src="asset/logo.png" style="height:50px" />
             <text class="loading"> OpenLive3D </text>
-            <div><br/> Click LOGO Opens the Menu! <br/></div>
+            <div><br /> Click LOGO Opens the Menu! <br /></div>
             <div id="loadinfo">
                 <p> ⟳ Initializing </p>
             </div>
@@ -93,6 +118,37 @@
     <script src="ol3dc/js/ml/log.js"></script>
     <script src="ol3dc/js/ml/ml-manager.js"></script>
     <script src="ol3dc/js/interpolator/interpolator.js"></script>
+    <!-- iFacialMocap Guide Modal (Moved to root) -->
+    <div id="ifacialmocap-guide" class="w3-modal"
+        style="z-index: 99999 !important; padding-top: 0; display: none; align-items: center; justify-content: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8);">
+        <div class="w3-modal-content w3-animate-zoom w3-card-4 w3-round-large"
+            style="background-color: #222; color: #fff; width: 500px; max-width: 90%; position: relative; margin: auto;">
+            <header class="w3-blue w3-round-large"
+                style="display: flex; justify-content: center; align-items: center; position: relative; border-bottom-left-radius: 0; border-bottom-right-radius: 0; padding: 10px 16px;">
+                <h3 style="margin: 0; font-size: 20px;">iFacialMocap Setup</h3>
+                <span onclick="document.getElementById('ifacialmocap-guide').style.display='none'"
+                    class="w3-hover-text-red"
+                    style="cursor: pointer; position: absolute !important; right: 10px !important; left: auto !important; width: auto !important; top: 50% !important; transform: translateY(-50%) !important; font-size: 24px; line-height: 1; color: white;">&times;</span>
+            </header>
+            <div class="w3-container" style="padding: 20px;">
+                <p>1. <b>Install App:</b> Download "iFacialMocap" on your iPhone (iPhone X+).</p>
+                <p>2. <b>Connect Network:</b> Ensure iPhone and PC are on the <b>same Wi-Fi</b>.</p>
+                <p>3. <b>Open App:</b> Launch app and note the IP address.</p>
+                <p>4. <b>Connect:</b> Enter IP in OpenLive3D and click Connect.</p>
+                <p>5. <b>Hybrid Mode:</b> Webcam tracks body, iPhone tracks face.</p>
+                <br>
+                <div class="w3-panel w3-leftbar w3-border-yellow w3-pale-yellow w3-round"
+                    style="color:#000; padding: 10px;">
+                    <small><b>Troubleshooting:</b> Check Windows Firewall. Allow port <b>49983</b>.</small>
+                </div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="document.getElementById('ifacialmocap-guide').style.display='none'"
+                        class="w3-button w3-blue w3-round">Got it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="ol3dc/js/entry/entry-manager.js"></script>
     <script src="ol3dc/js/effect/blur.js"></script>
     <script src="ol3dc/js/effect/frontlight.js"></script>
@@ -106,15 +162,17 @@
     <script src="ol3dc/js/control/health-manager.js"></script>
     <script src="ol3dc/js/control/control-manager.js"></script>
     <script src="ol3dc/js/control/hotkey.js"></script>
+    <script src="ol3dc/js/ml/ifacialmocap-client.js"></script>
     <script src="ol3dc/js/gui/gui-layout.js"></script>
     <script>
 
-// start camera, load resources, link things
-initialize();
+        // start camera, load resources, link things
+        initialize();
 
-// kick off the initialization loop!
-requestAnimationFrame(initLoop);
+        // kick off the initialization loop!
+        requestAnimationFrame(initLoop);
 
     </script>
 </body>
+
 </html>
