@@ -82,6 +82,7 @@ function connectIFacialMocap() {
 
     if (ip) {
         setCMV('IFACIALMOCAP_IP', ip);
+        localStorage.setItem('ifacialmocap_ip', ip);
 
         if (!ifacialMocapClient) {
             ifacialMocapClient = new IFacialMocapClient();
@@ -117,9 +118,9 @@ window.addEventListener('DOMContentLoaded', () => {
             toggleIFacialMocap(enabled);
         }
 
-        const savedIP = getCMV('IFACIALMOCAP_IP');
+        const savedIP = localStorage.getItem('ifacialmocap_ip') || getCMV('IFACIALMOCAP_IP');
         const ipInput = document.getElementById('ifacialmocap-ip');
-        if (ipInput && savedIP) {
+        if (ipInput && savedIP && savedIP !== "192.168.1.x") {
             ipInput.value = savedIP;
         }
     }, 1000); // Small delay to ensure config is initialized
