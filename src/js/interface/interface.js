@@ -67,6 +67,15 @@ function toggleIFacialMocap(checked) {
         if (ifacialMocapClient) {
             ifacialMocapClient.disconnect();
         }
+
+        // Reset Button UI
+        const btn = document.querySelector('#ifacialmocap-settings button[onclick="connectIFacialMocap()"]');
+        if (btn) {
+            btn.innerText = "Connect";
+            btn.classList.remove('w3-red');
+            btn.classList.add('w3-blue');
+        }
+        console.log("[Interface] Disconnected from iFacialMocap");
     }
 }
 
