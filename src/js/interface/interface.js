@@ -102,13 +102,15 @@ function connectIFacialMocap() {
         setCMV('IFACIALMOCAP_IP', ip);
         localStorage.setItem('ifacialmocap_ip', ip);
 
-        ifacialMocapClient = new IFacialMocapClient();
-        // Hook into the ML manager
-        ifacialMocapClient.onFaceData((data) => {
-            if (typeof window.applyIFacialMocapData === 'function') {
-                window.applyIFacialMocapData(data);
-            }
-        });
+        if (!ifacialMocapClient) {
+            ifacialMocapClient = new IFacialMocapClient();
+            // Hook into the ML manager
+            ifacialMocapClient.onFaceData((data) => {
+                if (typeof window.applyIFacialMocapData === 'function') {
+                    window.applyIFacialMocapData(data);
+                }
+            });
+        }
     }
 
     // Always re-register connect callback because it gets cleared after success
@@ -122,7 +124,6 @@ function connectIFacialMocap() {
 
     console.log(`[Interface] Connecting to iFacialMocap at ${ip}...`);
     ifacialMocapClient.connect(ip);
-}
 }
 
 // Initialize UI state on load
