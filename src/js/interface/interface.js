@@ -44,6 +44,11 @@ function toggleIFacialMocap(checked) {
         videoSelect.disabled = true;
         videoSelect.style.opacity = '0.5';
 
+        // Stop camera to save resources/prevent conflicts
+        if (typeof stopCamera === 'function') stopCamera();
+        // Disable UI camera toggle
+        setCMV('TOGGLE_CAMERA', false);
+
         // Auto-connect if IP is saved
         const savedIP = getCMV('IFACIALMOCAP_IP');
         if (savedIP && savedIP !== "192.168.1.x") {
@@ -54,6 +59,10 @@ function toggleIFacialMocap(checked) {
         settingsDiv.style.display = 'none';
         videoSelect.disabled = false;
         videoSelect.style.opacity = '1.0';
+
+        // Restart camera
+        if (typeof startCamera === 'function') startCamera();
+        setCMV('TOGGLE_CAMERA', true);
 
         if (ifacialMocapClient) {
             ifacialMocapClient.disconnect();
