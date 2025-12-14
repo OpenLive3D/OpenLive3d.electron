@@ -5,8 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "makex64": "electron-forge make --arch=\"x64\""
   },
   "repository": "https://github.com/OpenLive3D/OpenLive3D.github.io.git",
   "author": "Wei-1",

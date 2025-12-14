@@ -22,6 +22,7 @@ https://github.com/OpenLive3D/OpenLive3d.electron/releases
  - Install: `npm install`
  - Start Local Electron App: `npm run start`
  - Build Executables: `npm run make`
+ - To make Mac with Intel CPU use `npm run makex64`
  - Executables will be created in the `out` folder
 
 
