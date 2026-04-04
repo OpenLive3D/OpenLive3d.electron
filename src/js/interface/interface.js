@@ -1,14 +1,17 @@
 // interface
 
-const { ipcRenderer } = require('electron');
-let electronConfig = ipcRenderer.sendSync('initConfig', '');
-console.log(electronConfig);
+let electronConfig = null;
+
+async function fetchElectronConfig() {
+    electronConfig = await window.api.invoke('initConfig', '');
+    console.log("[Interface] Fetched config:", electronConfig);
+}
 
 function getSavedConfig() {
     return electronConfig;
 }
 function setSavedConfig(saveString) {
-    ipcRenderer.send('saveConfig', saveString);
+    window.api.send('saveConfig', saveString);
 }
 
 function setLogAPI(saveString) {
