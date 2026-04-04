@@ -165,13 +165,17 @@
     <script src="ol3dc/js/ml/ifacialmocap-client.js"></script>
     <script src="ol3dc/js/gui/gui-layout.js"></script>
     <script>
+        async function startApp() {
+            if (typeof fetchElectronConfig === 'function') {
+                await fetchElectronConfig();
+            }
+            // start camera, load resources, link things
+            initialize();
 
-        // start camera, load resources, link things
-        initialize();
-
-        // kick off the initialization loop!
-        requestAnimationFrame(initLoop);
-
+            // kick off the initialization loop!
+            requestAnimationFrame(initLoop);
+        }
+        startApp();
     </script>
 </body>
 

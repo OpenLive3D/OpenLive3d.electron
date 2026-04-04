@@ -3,6 +3,7 @@ const electron = require('electron');
 const { app } = electron;
 const { BrowserWindow } = electron;
 const { ipcMain } = electron;
+const { powerSaveBlocker } = electron;
 const {
     readFileSync,
     existsSync,
@@ -55,9 +56,10 @@ function createWindow() {
         height: 640,
         icon: path.join(__dirname, 'build/icon.icns'),
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
+            nodeIntegration: false,
+            contextIsolation: true,
             backgroundThrottling: false,
+            preload: path.join(__dirname, 'preload.js')
         },
     });
     // win.webContents.openDevTools();
@@ -70,9 +72,9 @@ function createWindow() {
     }));
 
     // save and load config
-    ipcMain.on('initConfig', (event, arg) => {
-        event.returnValue = readConfig();
-    })
+    ipcMain.handle('initConfig', () => {
+        return readConfig();
+    });
     ipcMain.on('saveConfig', (event, arg) => {
         console.log("Acquire Config ", arg);
         if(arg){
@@ -82,6 +84,8 @@ function createWindow() {
         }
     });
 }
-app.on('ready', () => {
+app.whenReady().then(() => {
+    const id = powerSaveBlocker.start('prevent-app-suspension');
+    console.log(`[Main] powerSaveBlocker started (prevent-app-suspension) with id: ${id}`);
     createWindow();
 });
