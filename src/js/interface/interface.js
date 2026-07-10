@@ -16,13 +16,15 @@ function setSavedConfig(saveString) {
 
 function setLogAPI(saveString) {
     try {
-        let request = new XMLHttpRequest();
-        request.open('POST', 'https://2bbb76lqd1.execute-api.us-east-1.amazonaws.com/dev/openlive3d_s3_put_log', false);
-        request.setRequestHeader('Content-Type', 'application/json');
-        request.send(saveString);
-        request.onreadystatechange = function () {
-            console.log(request);
-        }
+        fetch('https://2bbb76lqd1.execute-api.us-east-1.amazonaws.com/dev/openlive3d_s3_put_log', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: saveString
+        }).then(function(response) {
+            console.log("API log sent:", response.status);
+        }).catch(function(err) {
+            console.log("API Call Error:", err);
+        });
     } catch (err) {
         console.log("API Call Error");
     }

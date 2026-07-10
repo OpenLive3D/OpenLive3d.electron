@@ -52,6 +52,7 @@ let win;
 function createWindow() {
     // Create the browser window.
     win = new BrowserWindow({
+        title: 'OpenLive3D',
         width: 1024,
         height: 640,
         icon: path.join(__dirname, 'build/icon.icns'),
@@ -84,6 +85,11 @@ function createWindow() {
         }
     });
 }
+// GPU acceleration flags for real-time rendering performance
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+
 app.whenReady().then(() => {
     const id = powerSaveBlocker.start('prevent-app-suspension');
     console.log(`[Main] powerSaveBlocker started (prevent-app-suspension) with id: ${id}`);
