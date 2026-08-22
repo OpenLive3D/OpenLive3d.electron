@@ -2,9 +2,46 @@
 
 let electronConfig = null;
 
+function convertHexToDisplayColor(hex) {
+    if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return hex || '#00e700';
+    let cleanHex = hex.slice(1);
+    if (cleanHex.length === 3) {
+        cleanHex = cleanHex.split('').map(c => c + c).join('');
+    }
+    if (cleanHex.length !== 6) return hex;
+    const r = parseInt(cleanHex.slice(0, 2), 16) / 255;
+    const g = parseInt(cleanHex.slice(2, 4), 16) / 255;
+    const b = parseInt(cleanHex.slice(4, 6), 16) / 255;
+    const toSRGB = (c) => {
+        return c < 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1.0 / 2.4) - 0.055;
+    };
+    const sR = Math.min(255, Math.max(0, Math.round(toSRGB(r) * 255)));
+    const sG = Math.min(255, Math.max(0, Math.round(toSRGB(g) * 255)));
+    const sB = Math.min(255, Math.max(0, Math.round(toSRGB(b) * 255)));
+    return `#${sR.toString(16).padStart(2, '0')}${sG.toString(16).padStart(2, '0')}${sB.toString(16).padStart(2, '0')}`;
+}
+
 async function fetchElectronConfig() {
     electronConfig = await window.api.invoke('initConfig', '');
     console.log("[Interface] Fetched config:", electronConfig);
+    try {
+        if (electronConfig) {
+            const parsed = JSON.parse(electronConfig);
+            if (parsed && parsed.BG_COLOR) {
+                const displayColor = convertHexToDisplayColor(parsed.BG_COLOR);
+                document.documentElement.style.backgroundColor = displayColor;
+                document.body.style.backgroundColor = displayColor;
+                if (window.api && typeof window.api.send === 'function') {
+                    window.api.send('setBackgroundColor', displayColor);
+                }
+            }
+            if (parsed && typeof parsed.ALWAYS_ON_TOP === 'boolean') {
+                if (window.api && typeof window.api.send === 'function') {
+                    window.api.send('set-always-on-top', parsed.ALWAYS_ON_TOP);
+                }
+            }
+        }
+    } catch (e) {}
 }
 
 function getSavedConfig() {
@@ -133,6 +170,69 @@ function connectIFacialMocap() {
 
 // Initialize UI state on load
 window.addEventListener('DOMContentLoaded', () => {
+    // macOS platform detection for native styling
+    if (window.api && window.api.platform === 'darwin') {
+        document.documentElement.classList.add('platform-darwin');
+        document.body.classList.add('platform-darwin');
+    }
+
+    // Window focus / blur state handlers (native visual polish)
+    if (window.api && typeof window.api.on === 'function') {
+        window.api.on('window-focus', (isFocused) => {
+            if (isFocused) {
+                document.body.classList.remove('window-blurred');
+                document.body.classList.add('window-focused');
+            } else {
+                document.body.classList.add('window-blurred');
+                document.body.classList.remove('window-focused');
+            }
+        });
+
+        // Application menu triggers
+        window.api.on('menu-toggle-sidebar', () => {
+            const systembox = document.getElementById('systembox');
+            if (systembox) {
+                systembox.click();
+            }
+        });
+
+        window.api.on('menu-toggle-sidebars', () => {
+            toggleSidebars();
+        });
+
+        window.api.on('menu-toggle-all-ui', () => {
+            toggleAllUI();
+        });
+
+        window.api.on('menu-reset-camera', () => {
+            if (typeof resetCameraPos === 'function' && typeof getCMV === 'function') {
+                const headPos = getCMV('HEAD_POSITION') || { x: 0, y: 1.4, z: 0 };
+                resetCameraPos(headPos);
+            }
+        });
+
+        window.api.on('menu-open-vrm', async () => {
+            if (window.api && typeof window.api.invoke === 'function') {
+                const filePath = await window.api.invoke('show-open-vrm-dialog');
+                if (filePath && typeof loadVRM === 'function') {
+                    loadVRM('file://' + filePath);
+                    if (typeof setCMV === 'function') {
+                        setCMV('CUSTOM_MODEL', true);
+                    }
+                }
+            }
+        });
+
+        window.api.on('menu-tracking-mode', (mode) => {
+            if (typeof setCMV === 'function') {
+                setCMV('TRACKING_MODE', mode);
+            }
+            if (typeof setTrackingModeSelect === 'function') {
+                setTrackingModeSelect(mode);
+            }
+        });
+    }
+
     // Wait for config to be loaded
     setTimeout(() => {
         const enabled = getCMV('USE_IFACIALMOCAP');
@@ -148,4 +248,120 @@ window.addEventListener('DOMContentLoaded', () => {
             ipInput.value = savedIP;
         }
     }, 1000); // Small delay to ensure config is initialized
+});
+
+// Titlebar & top edge double click to toggle maximize/zoom
+document.addEventListener('dblclick', (e) => {
+    if (e.clientY <= 45) {
+        const target = e.target;
+        if (target && (target.closest('#systembox') || target.closest('#thesidebar') || target.closest('button') || target.closest('input') || target.closest('select') || target.closest('#ifacialmocap-guide'))) {
+            return;
+        }
+        if (window.api && typeof window.api.send === 'function') {
+            window.api.send('double-click-titlebar');
+        }
+    }
+});
+
+
+// Native macOS Finder Drag & Drop (.vrm models and background images)
+window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+});
+
+window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const name = file.name.toLowerCase();
+        if (name.endsWith('.vrm') || name.endsWith('.vrma')) {
+            const blob = new Blob([file], { type: 'application/octet-stream' });
+            const blobUrl = URL.createObjectURL(blob);
+            if (typeof loadVRM === 'function') {
+                loadVRM(blobUrl);
+                if (typeof setCMV === 'function') {
+                    setCMV('CUSTOM_MODEL', true);
+                }
+            }
+        } else if (name.endsWith('.png') || name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.webp')) {
+            const blobUrl = URL.createObjectURL(file);
+            if (typeof setCMV === 'function') {
+                setCMV('BG_UPLOAD', 'url(' + blobUrl + ')');
+            }
+            if (typeof setBackGround === 'function') {
+                setBackGround();
+            }
+        }
+    }
+});
+
+// Sidebar & UI Toggle Controls
+let sidebarsHidden = false;
+
+function toggleSidebars() {
+    const moodbar = document.getElementById("themoodbar");
+    const posebar = document.getElementById("theposebar");
+    const sidebar = document.getElementById("thesidebar");
+    const systembox = document.getElementById("systembox");
+
+    // If main settings sidebar is open, close it
+    if (sidebar && sidebar.style.display !== "none" && !sidebar.classList.contains('sidebar-close')) {
+        if (systembox) systembox.click();
+        return;
+    }
+
+    sidebarsHidden = !sidebarsHidden;
+    if (sidebarsHidden) {
+        if (moodbar) moodbar.style.display = "none";
+        if (posebar) posebar.style.display = "none";
+    } else {
+        if (moodbar) moodbar.style.display = "block";
+        if (posebar) posebar.style.display = "block";
+    }
+}
+
+function toggleAllUI() {
+    const moodbar = document.getElementById("themoodbar");
+    const posebar = document.getElementById("theposebar");
+    const sidebar = document.getElementById("thesidebar");
+    const systembox = document.getElementById("systembox");
+
+    if (sidebar && sidebar.style.display !== "none" && !sidebar.classList.contains('sidebar-close')) {
+        sidebar.style.display = "none";
+    }
+
+    sidebarsHidden = !sidebarsHidden;
+    if (sidebarsHidden) {
+        if (moodbar) moodbar.style.display = "none";
+        if (posebar) posebar.style.display = "none";
+        if (systembox) systembox.style.display = "none";
+    } else {
+        if (moodbar) moodbar.style.display = "block";
+        if (posebar) posebar.style.display = "block";
+        if (systembox) systembox.style.display = "block";
+    }
+}
+
+// Global Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+        return;
+    }
+
+    // Escape closes settings drawer
+    if (e.key === 'Escape') {
+        const sidebar = document.getElementById("thesidebar");
+        const systembox = document.getElementById("systembox");
+        if (sidebar && sidebar.style.display !== "none" && !sidebar.classList.contains('sidebar-close')) {
+            if (systembox) systembox.click();
+        }
+    }
+
+    // 'h' or 'H' toggles sidebars
+    if ((e.key === 'h' || e.key === 'H') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        toggleSidebars();
+    }
 });

@@ -14,6 +14,8 @@
 </head>
 
 <body>
+    <!-- Native titlebar drag region -->
+    <div class="mac-titlebar-drag" id="mac-titlebar-drag"></div>
     <!-- layout -->
     <div class="vrm" id="divvrm">
         <canvas class="foregroundeffect" id="foregroundeffect"></canvas>
@@ -69,12 +71,16 @@
         <button onclick="hideObj('logbox')" id="logboxbutton"
             class="w3-button w3-block w3-left-align w3-text-white"></button>
         <div class="w3-bar-item w3-hide" id="logbox"></div>
+        <!--shortcuts box-->
+        <button onclick="hideObj('shortcutbox')" id="shortcutboxbutton"
+            class="w3-button w3-block w3-left-align w3-text-white"></button>
+        <div class="w3-bar-item w3-hide" id="shortcutbox"></div>
         <div class="w3-bar-item w3-margin" id="about"></div>
     </div>
 
-    <div class="w3-sidebar w3-animate-left" style="width:52px;background-color:#00000008;display:block" id="themoodbar">
+    <div class="w3-sidebar w3-animate-left" style="width:68px;background-color:#00000008;display:block" id="themoodbar">
     </div>
-    <div class="w3-sidebar w3-animate-right" style="width:52px;background-color:#00000008;right:0;display:block"
+    <div class="w3-sidebar w3-animate-right" style="width:68px;background-color:#00000008;right:0;display:block"
         id="theposebar">
     </div>
     <div class="systembox" id="systembox">
