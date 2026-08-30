@@ -29,8 +29,6 @@ async function fetchElectronConfig() {
             const parsed = JSON.parse(electronConfig);
             if (parsed && parsed.BG_COLOR) {
                 const displayColor = convertHexToDisplayColor(parsed.BG_COLOR);
-                document.documentElement.style.backgroundColor = displayColor;
-                document.body.style.backgroundColor = displayColor;
                 if (window.api && typeof window.api.send === 'function') {
                     window.api.send('setBackgroundColor', displayColor);
                 }
