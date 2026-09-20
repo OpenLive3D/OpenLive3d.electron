@@ -49,22 +49,6 @@ function setSavedConfig(saveString) {
     window.api.send('saveConfig', saveString);
 }
 
-function setLogAPI(saveString) {
-    try {
-        fetch('https://2bbb76lqd1.execute-api.us-east-1.amazonaws.com/dev/openlive3d_s3_put_log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: saveString
-        }).then(function(response) {
-            console.log("API log sent:", response.status);
-        }).catch(function(err) {
-            console.log("API Call Error:", err);
-        });
-    } catch (err) {
-        console.log("API Call Error");
-    }
-}
-
 function onKeyUpHook(f) {
     document.addEventListener("keyup", f);
 }
