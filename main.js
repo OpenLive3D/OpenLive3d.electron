@@ -151,6 +151,213 @@ function validateBounds(state) {
     return state;
 }
 
+// --- Auto-Updater & Version Checker ---
+function compareSemver(v1, v2) {
+    const clean = (v) => (v || '').replace(/^[^\d]*/, '').split('-')[0].split('.').map(n => parseInt(n, 10) || 0);
+    const p1 = clean(v1);
+    const p2 = clean(v2);
+    const len = Math.max(p1.length, p2.length);
+    for (let i = 0; i < len; i++) {
+        const a = p1[i] || 0;
+        const b = p2[i] || 0;
+        if (a > b) return 1;
+        if (a < b) return -1;
+    }
+    return 0;
+}
+
+function scoreAsset(asset, platform = process.platform, arch = process.arch) {
+    if (!asset || !asset.name) return -99999;
+    const name = asset.name.toLowerCase();
+
+    // Ignore checksums, signatures, blockmaps, metadata, and source archives
+    const ignoredExts = ['.blockmap', '.sha256', '.sha512', '.md5', '.sig', '.asc', '.txt', '.json', '.yml', '.yaml'];
+    if (ignoredExts.some(ext => name.endsWith(ext))) return -99999;
+    if (name.includes('source code')) return -99999;
+
+    let score = 0;
+
+    if (platform === 'darwin') {
+        const isOtherOS = /(win32|win64|windows|\.exe$|\.msi$|linux|\.appimage$|\.deb$|\.rpm$)/i.test(name);
+        if (isOtherOS) return -99999; // Never download Windows/Linux binary on macOS
+
+        const isDmgOrPkg = name.endsWith('.dmg') || name.endsWith('.pkg');
+        const hasMacKeyword = /(darwin|mac|macos|osx|apple)/i.test(name);
+        const isMac = hasMacKeyword || isDmgOrPkg;
+        if (!isMac) return -99999;
+
+        score += 50;
+
+        // Installer package preference: DMG > PKG > ZIP
+        if (name.endsWith('.dmg')) score += 100;
+        else if (name.endsWith('.pkg')) score += 80;
+        else if (name.endsWith('.zip')) score += 60;
+        else return -99999;
+
+        // Architecture scoring
+        const isArmTarget = arch === 'arm64';
+        const hasArmToken = /(^|[^a-z0-9])(arm64|aarch64|apple[-_]?silicon|m[1-4]|arm)([^a-z0-9]|$)/i.test(name);
+        const hasIntelToken = /(^|[^a-z0-9])(x64|x86_64|x86-64|intel|amd64)([^a-z0-9]|$)/i.test(name);
+        const isUniversal = /universal/i.test(name);
+
+        if (isArmTarget) {
+            if (hasArmToken) score += 100;
+            else if (isUniversal) score += 80;
+            else if (hasIntelToken) score -= 300; // Strong penalty against x64 if arm64/universal exists
+        } else {
+            // Intel target
+            if (hasIntelToken) score += 100;
+            else if (isUniversal) score += 80;
+            else if (hasArmToken) return -99999; // Intel hardware cannot run ARM binaries
+        }
+    } else if (platform === 'win32') {
+        if (/(darwin|mac|linux)/i.test(name)) return -99999;
+        if (name.endsWith('.exe')) score += 100;
+        else if (name.endsWith('.msi')) score += 90;
+        else if (name.endsWith('.zip')) score += 60;
+        else return -99999;
+        if (arch === 'x64' && /(x64|x86_64|intel|amd64)/i.test(name)) score += 100;
+    } else {
+        if (/(darwin|mac|win32|win64|\.exe$)/i.test(name)) return -99999;
+        if (name.endsWith('.appimage')) score += 100;
+        else if (name.endsWith('.deb')) score += 80;
+        else if (name.endsWith('.tar.gz') || name.endsWith('.zip')) score += 50;
+    }
+
+    return score;
+}
+
+function findBestAsset(assets, platform = process.platform, arch = process.arch) {
+    if (!Array.isArray(assets) || assets.length === 0) return null;
+    let best = null;
+    let highestScore = 0;
+
+    for (const asset of assets) {
+        const score = scoreAsset(asset, platform, arch);
+        if (score > highestScore) {
+            highestScore = score;
+            best = asset;
+        }
+    }
+    return best;
+}
+
+function isAutoCheckUpdatesEnabled() {
+    try {
+        const cfgStr = readConfig();
+        if (cfgStr) {
+            const cfg = JSON.parse(cfgStr);
+            if (cfg && typeof cfg.AUTO_CHECK_UPDATES === 'boolean') {
+                return cfg.AUTO_CHECK_UPDATES;
+            }
+        }
+    } catch (e) {}
+    return true;
+}
+
+function setAutoCheckUpdatesEnabled(enabled) {
+    try {
+        const cfgStr = readConfig();
+        const cfg = cfgStr ? JSON.parse(cfgStr) : {};
+        cfg.AUTO_CHECK_UPDATES = Boolean(enabled);
+        saveConfig(JSON.stringify(cfg));
+    } catch (e) {
+        console.error('[Main] Failed to update AUTO_CHECK_UPDATES config:', e);
+    }
+}
+
+let isCheckingForUpdates = false;
+async function checkForUpdates(targetWindow, { manual = false } = {}) {
+    if (isCheckingForUpdates) {
+        if (manual && targetWindow && !targetWindow.isDestroyed()) {
+            await dialog.showMessageBox(targetWindow, {
+                type: 'info',
+                title: 'Check for Updates',
+                message: 'Checking for updates...',
+                detail: 'An update check is already in progress. Please wait a moment.',
+                buttons: ['OK']
+            });
+        }
+        return;
+    }
+
+    isCheckingForUpdates = true;
+    try {
+        const response = await fetch('https://api.github.com/repos/OpenLive3D/OpenLive3d.electron/releases/latest', {
+            headers: {
+                'User-Agent': `OpenLive3D/${app.getVersion()} (${process.platform}; ${process.arch})`
+            },
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!response.ok) {
+            throw new Error(`GitHub API returned status ${response.status}`);
+        }
+
+        const release = await response.json();
+        const latestTag = release.tag_name || '';
+        const currentVersion = app.getVersion();
+        const autoCheckDefault = isAutoCheckUpdatesEnabled();
+
+        if (compareSemver(currentVersion, latestTag) < 0) {
+            const asset = findBestAsset(release.assets, process.platform, process.arch);
+            const downloadUrl = asset ? asset.browser_download_url : (release.html_url || 'https://github.com/OpenLive3D/OpenLive3d.electron/releases/latest');
+            const assetType = asset ? path.extname(asset.name).replace('.', '').toUpperCase() : 'RELEASE';
+            const releaseNotes = (release.body || '').trim();
+            const truncatedNotes = releaseNotes.length > 300 ? releaseNotes.substring(0, 300) + '...' : releaseNotes;
+
+            if (targetWindow && !targetWindow.isDestroyed()) {
+                const { response: buttonIndex, checkboxChecked } = await dialog.showMessageBox(targetWindow, {
+                    type: 'info',
+                    title: 'Update Available',
+                    message: `A new version of OpenLive3D (${latestTag}) is available!`,
+                    detail: `You are currently using v${currentVersion}.\n\n` +
+                            (truncatedNotes ? `Release Highlights:\n${truncatedNotes}\n\n` : '') +
+                            (asset ? `Package: ${asset.name} (${assetType})` : 'Package: Direct from GitHub Releases page'),
+                    buttons: ['Download Update', 'Later'],
+                    defaultId: 0,
+                    cancelId: 1,
+                    checkboxLabel: 'Automatically check for updates in future',
+                    checkboxChecked: autoCheckDefault
+                });
+
+                setAutoCheckUpdatesEnabled(checkboxChecked);
+
+                if (buttonIndex === 0) {
+                    await shell.openExternal(downloadUrl);
+                }
+            }
+        } else {
+            if (manual && targetWindow && !targetWindow.isDestroyed()) {
+                const { checkboxChecked } = await dialog.showMessageBox(targetWindow, {
+                    type: 'info',
+                    title: "You're Up to Date!",
+                    message: `OpenLive3D v${currentVersion} is currently the newest version.`,
+                    detail: 'No newer updates are available at this time.',
+                    buttons: ['OK'],
+                    checkboxLabel: 'Automatically check for updates in future',
+                    checkboxChecked: autoCheckDefault
+                });
+
+                setAutoCheckUpdatesEnabled(checkboxChecked);
+            }
+        }
+    } catch (err) {
+        console.error('[Main] Update check failed:', err);
+        if (manual && targetWindow && !targetWindow.isDestroyed()) {
+            await dialog.showMessageBox(targetWindow, {
+                type: 'warning',
+                title: 'Update Check Failed',
+                message: 'Unable to check for updates.',
+                detail: `Please check your internet connection or try again later.\n\nError: ${err.message}`,
+                buttons: ['OK']
+            });
+        }
+    } finally {
+        isCheckingForUpdates = false;
+    }
+}
+
 // Native macOS / platform Application Menu
 function setupApplicationMenu(window) {
     const isMac = process.platform === 'darwin';
@@ -160,6 +367,14 @@ function setupApplicationMenu(window) {
             label: app.name || 'OpenLive3D',
             submenu: [
                 { role: 'about' },
+                {
+                    label: 'Check for Updates...',
+                    click: () => {
+                        if (window && !window.isDestroyed()) {
+                            checkForUpdates(window, { manual: true });
+                        }
+                    }
+                },
                 { type: 'separator' },
                 {
                     label: 'Settings / Sidebar',
@@ -293,6 +508,15 @@ function setupApplicationMenu(window) {
             role: 'help',
             submenu: [
                 {
+                    label: 'Check for Updates...',
+                    click: () => {
+                        if (window && !window.isDestroyed()) {
+                            checkForUpdates(window, { manual: true });
+                        }
+                    }
+                },
+                { type: 'separator' },
+                {
                     label: 'OpenLive3D Documentation',
                     click: async () => {
                         await shell.openExternal('https://github.com/OpenLive3D/OpenLive3D.document');
@@ -337,6 +561,7 @@ function createWindow() {
             nodeIntegration: false,
             contextIsolation: true,
             backgroundThrottling: false,
+            pageVisibility: true,
             preload: path.join(__dirname, 'preload.js')
         }
     };
@@ -373,6 +598,17 @@ function createWindow() {
     // Show window only when ready to render
     win.once('ready-to-show', () => {
         win.show();
+        if (win && win.webContents) {
+            win.webContents.setBackgroundThrottling(false);
+        }
+        // Delayed background update check if enabled
+        if (isAutoCheckUpdatesEnabled()) {
+            setTimeout(() => {
+                if (win && !win.isDestroyed()) {
+                    checkForUpdates(win, { manual: false });
+                }
+            }, 8000);
+        }
     });
 
     // Window focus/blur state broadcasting
@@ -477,6 +713,11 @@ function createWindow() {
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('ignore-gpu-blocklist');
+
+// Prevent background & occlusion throttling on macOS (e.g. when game takes fullscreen space)
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 
 app.whenReady().then(() => {
     const id = powerSaveBlocker.start('prevent-app-suspension');
